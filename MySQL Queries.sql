@@ -12,7 +12,7 @@ USE sakila;
 SELECT first_name, last_name FROM actor;
 
 -- 1b. Display the first and last name of each actor in a single column in upper case letters. Name the column `Actor Name`.
-SELECT concat(first_name, ' ', last_name) AS `Actor Name`
+SELECT CONCAT(first_name, ' ', last_name) AS `Actor Name`
 FROM actor;
 
 -- 2a. You need to find the ID number, first name, and last name of an actor, of whom you know only the first name, "Joe." What is one query you would use to obtain this information?
@@ -140,21 +140,97 @@ WHERE actor_id IN
 	)
 );
 
--- 7c. You want to run an email marketing campaign in Canada, for which you will need the names and email addresses of all Canadian customers. Use joins to retrieve this information.
+-- 7c. You want to run an email marketing campaign in Canada, for which you will need the names and email addresses of all Canadian customers. 
+-- Use joins to retrieve this information.
+SELECT first_name, last_name, email
+FROM customer cu
+JOIN address a
+ON cu.address_id = a.address_id
+JOIN city c
+ON a.city_id = c.city_id
+JOIN country co
+ON c.country_id = co.country_id
+WHERE co.country = 'Canada';
 
 -- 7d. Sales have been lagging among young families, and you wish to target all family movies for a promotion. Identify all movies categorized as _family_ films.
-
+SELECT title
+FROM film
+WHERE film_id IN 
+(
+    SELECT film_id
+    FROM film_category
+    WHERE category_id IN
+    (
+		SELECT category_id
+        FROM category
+        WHERE name = 'Family'
+	)
+);
 -- 7e. Display the most frequently rented movies in descending order.
+SELECT title, COUNT(rental_id) AS 'Number of time Rented'
+FROM film
+JOIN inventory
+USING (film_id)
+JOIN rental
+USING (inventory_id)
+GROUP BY title
+ORDER BY COUNT(rental_id) DESC;
 
 -- 7f. Write a query to display how much business, in dollars, each store brought in.
+SELECT store_id AS 'Store', SUM(amount) AS 'Store Business in $'
+FROM store 
+JOIN staff
+USING (store_id)
+JOIN rental
+USING (staff_id)
+JOIN payment
+USING (rental_id)
+GROUP BY store_id;
 
 -- 7g. Write a query to display for each store its store ID, city, and country.
+SELECT store_id AS 'Store', city, country
+FROM store
+JOIN address
+USING (address_id)
+JOIN city
+USING (city_id)
+JOIN country
+USING (country_id);
 
 -- 7h. List the top five genres in gross revenue in descending order. (**Hint**: you may need to use the following tables: category, film_category, inventory, payment, and rental.)
+SELECT name AS 'Genre', SUM(amount) AS 'Gross Revenue'
+FROM category
+JOIN film_category
+USING(category_id)
+JOIN inventory 
+USING (film_id)
+JOIN rental
+USING (inventory_id)
+JOIN payment
+USING (rental_id)
+GROUP BY name
+ORDER BY SUM(amount) DESC
+LIMIT 5;
 
--- 8a. In your new role as an executive, you would like to have an easy way of viewing the Top five genres by gross revenue. Use the solution from the problem above to create a view. If you haven't solved 7h, you can substitute another query to create a view.
+-- 8a. In your new role as an executive, you would like to have an easy way of viewing the Top five genres by gross revenue. 
+-- Use the solution from the problem above to create a view. If you haven't solved 7h, you can substitute another query to create a view.
+CREATE VIEW top_5_genres AS SELECT name AS 'Genre', SUM(amount) AS 'Gross Revenue'
+FROM category
+JOIN film_category
+USING(category_id)
+JOIN inventory 
+USING (film_id)
+JOIN rental
+USING (inventory_id)
+JOIN payment
+USING (rental_id)
+GROUP BY name
+ORDER BY SUM(amount) DESC
+LIMIT 5;
 
 -- 8b. How would you display the view that you created in 8a?
+SELECT * FROM top_5_genres;
 
 -- 8c. You find that you no longer need the view `top_five_genres`. Write a query to delete it.
+DROP VIEW top_5_genres;
 
